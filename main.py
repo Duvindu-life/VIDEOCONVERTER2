@@ -1,45 +1,59 @@
-#!/usr/bin/env python3
-
-import urllib.request
-import urllib.error
-import re
-import sys
-import time
+import subprocess
 import os
-import pipes
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
-def video_to_audio(fileName):
-	try:
-		file, file_extension = os.path.splitext(fileName)
-		file = pipes.quote(file)
-		video_to_wav = 'ffmpeg -i ' + file + file_extension + ' ' + file + '.wav'
-		final_audio = 'lame '+ file + '.wav' + ' ' + file + '.mp3'
-		os.system(video_to_wav)
-		os.system(final_audio)
-		#file=pipes.quote(file)
-		#os.remove(file + '.wav')
-		print("sucessfully converted ", fileName, " into audio!")
-	except OSError as err:
-		print(err.reason)
-		exit(1)
+def convert_video(input_path):
+    if not os.path.isfile(input_path):
+        messagebox.showerror("Error", f"File not found: {input_path}")
+        return
 
-def main():
-	if len(sys.argv) <1 or len(sys.argv) > 2:
-		print('command usage: python3 video_to_audio.py FileName')
-		exit(1)
-	else:
-		filePath = sys.argv[1]
-		# check if the specified file exists or not
-		try:
-			if os.path.exists(filePath):
-				print("file found!")
-		except OSError as err:
-			print(err.reason)
-			exit(1)
-		# convert video to audio
-		video_to_audio(filePath)
-		time.sleep(1)
-		
-# install ffmpeg and/or lame if you get an error saying that the program is currently not installed 
-if __name__ == '__main__':
-	main()
+    ffmpeg_path = r"C:\ffmpeg\ffmpeg-2024-07-28-git-e7d3ff8dcd-full_build\ffmpeg-2024-07-28-git-e7d3ff8dcd-full_build\bin\ffmpeg.exe"
+
+    if not os.path.isfile(ffmpeg_path):
+        messagebox.showerror("Error", f"FFmpeg executable not found: {ffmpeg_path}")
+        return
+
+    base, ext = os.path.splitext(input_path)
+    output_path = f"{base}_converted.mp4"
+
+    command = [
+        ffmpeg_path,
+        '-i', input_path,
+        '-c:v', 'libx264',
+        '-c:a', 'aac',
+        '-strict', 'experimental',
+        output_path
+    ]
+
+    try:
+        subprocess.run(command, check=True)
+        messagebox.showinfo("Success", f"Successfully converted {input_path} to {output_path}")
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", f"Error during conversion: {e}")
+    except FileNotFoundError as e:
+        messagebox.showerror("Error", f"File not found error: {e}")
+
+def select_file():
+    input_path = filedialog.askopenfilename(filetypes=[("MP4 files", "*.mp4"), ("All files", "*.*")])
+    if input_path:
+        convert_video(input_path)
+
+def create_gui():
+    root = tk.Tk()
+    root.title("Video Converter")
+
+    frame = tk.Frame(root, padx=10, pady=10)
+    frame.pack(padx=10, pady=10)
+
+    label = tk.Label(frame, text="Select a video file to convert:")
+    label.pack(pady=5)
+
+    convert_button = tk.Button(frame, text="Select File", command=select_file)
+    convert_button.pack(pady=5)
+
+    root.mainloop()
+
+if __name__ == "__main__":
+    create_gui()
+change
